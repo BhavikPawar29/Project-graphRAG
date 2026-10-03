@@ -1,11 +1,15 @@
-mod models;
+mod graph;
 mod llm;
+mod models;
+
+use graph::KnowledgeGraph;
 
 use std::env;
 
 use anyhow::{Ok, Result};
 use dotenvy::dotenv;
 use petgraph::graph::Graph;
+use petgraph::visit::EdgeRef;
 use reqwest::Client;
 
 use serde::{Deserialize, Serialize};
@@ -79,6 +83,8 @@ async fn main() -> Result<()>{
     let mut total_entities = 0;
     let mut total_relationships = 0;
 
+    let mut extractions = Vec::new();
+
     for (i, chunk) in corpus.iter().enumerate(){
         println!("Processing chunk {}...", i + 1);
 
@@ -102,6 +108,8 @@ async fn main() -> Result<()>{
             entity_count,
             relationship_count
         );
+
+        extractions.push(extraction);
     }
 
     println!();
@@ -110,6 +118,41 @@ async fn main() -> Result<()>{
         total_entities,
         total_relationships
     );
+
+    let knowledge_graph = KnowledgeGraph::build(&extractions);
+
+    println!(
+        "\nGraph: {} nodes, {} edges",
+        knowledge_graph.graph.node_count(),
+        knowledge_graph.graph.edge_count()
+    );
+
+    println!("\nKnowledge Graph:");
+
+    for node_index in knowledge_graph.graph.node_indices() {
+        let node = &knowledge_graph.graph[node_index];
+
+        println!(
+            "\n{} [{}]",
+            node.name,
+            node.entity_type
+        );
+
+        println!("  {}", node.description);
+
+        for edge in knowledge_graph.graph.edges(node_index){
+            let target_index = edge.target();
+            let target = &knowledge_graph.graph[target_index];
+            let relationship = edge.weight();
+
+            println!(
+                "  -- {} ({:.2}) --> {}",
+                relationship.description,
+                relationship.strength,
+                target.name
+            );
+        }
+    }
 
     Ok(())
 
