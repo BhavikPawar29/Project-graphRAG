@@ -20,5 +20,5 @@ pub struct Relationship {
     pub source: String,
     pub target: String,
     pub description: String,
-    pub streangth: f32,
+    pub strength: f32,
 }

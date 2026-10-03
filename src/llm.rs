@@ -60,22 +60,51 @@ struct OllamaOptions {
     temperature: f32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize)]
 struct OllamaResponse {
     message: OllamaMessage,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize)]
 struct OllamaMessage {
     content: String,
 }
 
-pub async fun extract_entities_and_relationships (
+pub async fn extract_entities_and_relationships (
     client: &Client,
-    model: &model,
+    model: &str,
     chunk: &str,
 ) -> Result<Extraction>{
-    // TODO: CELL 3 IN REF. 
-    // TODO : FUNCION TO BE IMPLEMENTED 
+  let request = OllamaRequest {
+    model: model.to_string(),
+    messages: vec![
+      Message{
+        role: "system".to_string(),
+        content: EXTRACTION_PROMPT.to_string(),
+      },
+      Message{
+        role: "user".to_string(),
+        content:format!("Text:\n{}", chunk),
+      },
+    ],
+
+    stream: false,
+
+    format: "json".to_string(),
+
+    options: OllamaOptions {
+            temperature: 0.0,
+        },
+  };
+
+  let response = client.post(OLLAMA_URL).json(&request).send().await.context("Failed to contact Ollama")?;
+
+  let response = response.error_for_status().context("Ollama returned an error")?;
+
+  let ollama_response: OllamaResponse = response.json().await.context("Failed to parse Ollama reponse")?;
+
+  let extraction: Extraction = serde_json::from_str(&ollama_response.message.content).context("LLM returned invalied extraction JSON")?;
+
+  Ok(extraction)
 }
 

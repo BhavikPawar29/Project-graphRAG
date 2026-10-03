@@ -6,11 +6,15 @@ use std::env;
 use anyhow::{Ok, Result};
 use dotenvy::dotenv;
 use petgraph::graph::Graph;
+use reqwest::Client;
 
 use serde::{Deserialize, Serialize};
 
 
-fn main(){
+use llm::extract_entities_and_relationships;
+
+#[tokio::main]
+async fn main() -> Result<()>{
     // dotenv().ok();
     
     // let api_key = env::var("key");
@@ -66,12 +70,47 @@ fn main(){
         Hybrid search combines dense retrieval with sparse BM25 scoring."#,
     ];
 
-    println!("Corpus: {} chunks", corpus.len());
+    let model = "qwen3:4b-instruct";
 
-    for (i, chunk) in corpus.iter().enumerate() {
-        let word_count = chunk.split_whitespace().count();
+    let client = Client::new();
 
-        println!("  Chunk {}: {} words", i + 1, word_count);
+    println!("Extracting entities and relationships...\n");
+
+    let mut total_entities = 0;
+    let mut total_relationships = 0;
+
+    for (i, chunk) in corpus.iter().enumerate(){
+        println!("Processing chunk {}...", i + 1);
+
+        let extraction = 
+            extract_entities_and_relationships(
+                &client, 
+                model, 
+                chunk
+            )
+            .await?;
+
+        let entity_count = extraction.entities.len();
+        let relationship_count = extraction.relationships.len();
+
+        total_entities += entity_count;
+        total_relationships += relationship_count;
+
+         println!(
+            "  Chunk {}: {} entities, {} relationships",
+            i + 1,
+            entity_count,
+            relationship_count
+        );
     }
+
+    println!();
+    println!(
+        "Total before merging: {} entities, {} relationships",
+        total_entities,
+        total_relationships
+    );
+
+    Ok(())
 
 }
