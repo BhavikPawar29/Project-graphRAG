@@ -19,16 +19,7 @@ use llm::extract_entities_and_relationships;
 
 #[tokio::main]
 async fn main() -> Result<()>{
-    // dotenv().ok();
-    
-    // let api_key = env::var("key");
-    
-    // println!("API key loaded.");
-    // println!("Setup complete.");
-
-    // Ok(())
-
-    let corpus = vec![
+        let corpus = vec![
          r#"Transformer models use self-attention to relate all positions in a sequence
         simultaneously. The attention mechanism computes query, key, and value projections,
         then applies scaled dot-product attention. BERT introduced bidirectional
