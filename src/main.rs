@@ -145,6 +145,26 @@ async fn main() -> Result<()>{
         }
     }
 
+    println!("\nCommnutities:");
+
+    let communities = knowledge_graph.detect_communities();
+
+    println!("Communities detected: {}", communities.len());
+
+    for community in &communities{
+        println!(
+             "\nCommunity {} ({} nodes):",
+                community.id,
+                community.members.len()
+        );
+
+        for &node_index in &community.members {
+            let node = &knowledge_graph.graph[node_index];
+
+            println!("  - {} [{}]", node.name, node.entity_type);
+        }
+    }
+
     Ok(())
 
 }

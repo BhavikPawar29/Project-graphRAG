@@ -1,8 +1,12 @@
-use anyhow::Result;
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::Undirected;
 use std::collections::HashMap;
-use std::hash::Hash;
+use std::vec;
+use graphops::partition;
+use graphops::louvain::louvain;
+
+use graphops::graph::GraphRef;
+use graphops::louvain::louvain_seeded;
 
 use crate::models::{Entity, Extraction, Relationship};
 
@@ -20,9 +24,29 @@ pub struct GraphEdge {
     pub source_chunk_id: usize,
 }
 
+struct CommunityGraph {
+    neighbors: Vec<Vec<usize>>,
+}
+
+impl GraphRef for CommunityGraph {
+    fn node_count(&self) -> usize {
+        self.neighbors.len()
+    }
+
+    fn neighbors_ref(&self, node: usize) -> &[usize] {
+        &self.neighbors[node]
+    }
+    
+}
+
 pub struct KnowledgeGraph {
     pub graph: Graph<GraphNode, GraphEdge, Undirected>,
     pub node_indices: HashMap<String, NodeIndex>,
+}
+
+pub struct Commmunity {
+    pub id: usize, 
+    pub members: Vec<NodeIndex>,
 }
 
 impl KnowledgeGraph {
@@ -84,7 +108,7 @@ impl KnowledgeGraph {
         else {
             let edge = GraphEdge {
                 description: relationship.description.clone(),
-                strength: relationship.strength.clone(),
+                strength: relationship.strength,
                 source_chunk_id,
             };
 
@@ -110,5 +134,40 @@ impl KnowledgeGraph {
         }
 
         knowledge_graph
+    }
+
+    fn community_graph (&self) -> CommunityGraph {
+        let mut neighbors = vec![Vec::new(); self.graph.node_count()];
+
+        for node_index in self.graph.node_indices() {
+            let node_id = node_index.index();
+
+            for neighbor in self.graph.neighbors(node_index) {
+                neighbors[node_id].push(neighbor.index());
+            }
+            
+        }
+
+        CommunityGraph { neighbors }
+    }
+    pub fn detect_communities(&self) -> Vec<Commmunity> {
+
+        let community_graph = self.community_graph();
+
+        let partition = louvain_seeded(&community_graph, 1.0, 42);
+
+        let mut communities: HashMap<usize, Vec<NodeIndex>> = HashMap::new();
+
+        for node_index in self.graph.node_indices() {
+            let community_id = partition[node_index.index()];
+
+            communities.entry(community_id).or_default().push(node_index);
+        }
+
+        let mut result: Vec<Commmunity> = communities.into_iter().map(|(id, members)| Commmunity {id, members}).collect();
+
+        result.sort_by_key(|commmunity| commmunity.id);
+
+        result
     }
 }
