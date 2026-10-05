@@ -3,17 +3,12 @@ mod llm;
 mod models;
 
 use graph::KnowledgeGraph;
+use graph::WeightedPetgraph;
 
-use std::env;
 
 use anyhow::{Ok, Result};
-use dotenvy::dotenv;
-use petgraph::graph::Graph;
 use petgraph::visit::EdgeRef;
 use reqwest::Client;
-
-use serde::{Deserialize, Serialize};
-
 
 use llm::extract_entities_and_relationships;
 
@@ -112,6 +107,10 @@ async fn main() -> Result<()>{
 
     let knowledge_graph = KnowledgeGraph::build(&extractions);
 
+    let weighted_graph = WeightedPetgraph {
+        graph: &knowledge_graph.graph
+    };
+
     println!(
         "\nGraph: {} nodes, {} edges",
         knowledge_graph.graph.node_count(),
@@ -145,26 +144,22 @@ async fn main() -> Result<()>{
         }
     }
 
-    println!("\nCommnutities:");
-
+    
     let communities = knowledge_graph.detect_communities();
+    
+    println!("\nCommunities:");
 
-    println!("Communities detected: {}", communities.len());
+    for node_index in knowledge_graph.graph.node_indices() {
+        let node = &knowledge_graph.graph[node_index];
+        let community_id = communities[node_index.index()];
 
-    for community in &communities{
-        println!(
-             "\nCommunity {} ({} nodes):",
-                community.id,
-                community.members.len()
+         println!(
+            "  Community {} -> {}",
+            community_id,
+            node.name
         );
-
-        for &node_index in &community.members {
-            let node = &knowledge_graph.graph[node_index];
-
-            println!("  - {} [{}]", node.name, node.entity_type);
-        }
     }
-
+    
     Ok(())
 
 }

@@ -2,13 +2,14 @@ use petgraph::graph::{Graph, NodeIndex};
 use petgraph::Undirected;
 use std::collections::HashMap;
 use std::vec;
-use graphops::partition;
-use graphops::louvain::louvain;
 
 use graphops::graph::GraphRef;
-use graphops::louvain::louvain_seeded;
+// use graphops::louvain::louvain_seeded;
+
+use graphops::graph::{Graph as GraphOpsGraph, WeightedGraph};
 
 use crate::models::{Entity, Extraction, Relationship};
+
 
 #[derive(Debug, Clone)]
 pub struct GraphNode {
@@ -169,5 +170,31 @@ impl KnowledgeGraph {
         result.sort_by_key(|commmunity| commmunity.id);
 
         result
+    }
+
+}
+
+pub struct WeightedPetgraph<'a> {
+    pub graph: &'a petgraph::Graph<GraphNode, GraphEdge, petgraph::Undirected>,
+}
+
+impl <'a> GraphOpsGraph for WeightedPetgraph<'a> {
+
+    fn node_count(&self) -> usize {
+        self.graph.node_count()
+    }
+
+    fn neighbors(&self, node: usize) -> Vec<usize> {
+        self.graph.neighbors(petgraph::graph::NodeIndex::new(node)).map(|idx| idx.index()).collect()
+    }
+    
+}
+
+impl<'a> WeightedGraph for WeightedPetgraph<'a> {
+    fn edge_weight(&self, source: usize, target: usize) -> f64 {
+        let source = petgraph::graph::node_index(source);
+        let target = petgraph::graph::node_index(target);
+
+        self.graph.find_edge(source, target).map(|edge_index| self.graph[edge_index].strength as f64).unwrap_or(0.0)
     }
 }
