@@ -2,13 +2,11 @@ mod graph;
 mod llm;
 mod models;
 
-use graph::KnowledgeGraph;
-use graph::WeightedPetgraph;
-
 
 use anyhow::{Ok, Result};
 use petgraph::visit::EdgeRef;
 use reqwest::Client;
+use graph::KnowledgeGraph;
 
 use llm::extract_entities_and_relationships;
 
@@ -106,10 +104,6 @@ async fn main() -> Result<()>{
     );
 
     let knowledge_graph = KnowledgeGraph::build(&extractions);
-
-    let weighted_graph = WeightedPetgraph {
-        graph: &knowledge_graph.graph
-    };
 
     println!(
         "\nGraph: {} nodes, {} edges",
