@@ -1,10 +1,6 @@
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::Undirected;
 use std::collections::HashMap;
-use std::vec;
-
-use graphops::graph::GraphRef;
-use graphops::louvain::louvain_seeded;
 
 use graphops::graph::{Graph as GraphOpsGraph, WeightedGraph};
 
@@ -25,30 +21,16 @@ pub struct GraphEdge {
     pub source_chunk_id: usize,
 }
 
-struct CommunityGraph {
-    neighbors: Vec<Vec<usize>>,
-}
-
-impl GraphRef for CommunityGraph {
-    fn node_count(&self) -> usize {
-        self.neighbors.len()
-    }
-
-    fn neighbors_ref(&self, node: usize) -> &[usize] {
-        &self.neighbors[node]
-    }
-    
-}
-
 pub struct KnowledgeGraph {
     pub graph: Graph<GraphNode, GraphEdge, Undirected>,
     pub node_indices: HashMap<String, NodeIndex>,
 }
 
-pub struct Commmunity {
-    pub id: usize, 
-    pub members: Vec<NodeIndex>,
-}
+// #[derive(Debug)]
+// pub struct Community {
+//     pub id: usize, 
+//     pub members: Vec<NodeIndex>,
+// }
 
 impl KnowledgeGraph {
     pub fn new () -> Self {
@@ -166,8 +148,8 @@ impl <'a> GraphOpsGraph for WeightedPetgraph<'a> {
 
 impl<'a> WeightedGraph for WeightedPetgraph<'a> {
     fn edge_weight(&self, source: usize, target: usize) -> f64 {
-        let source = petgraph::graph::node_index(source);
-        let target = petgraph::graph::node_index(target);
+        let source = petgraph::graph::NodeIndex::new(source);
+        let target = petgraph::graph::NodeIndex::new(target);
 
         self.graph.find_edge(source, target).map(|edge_index| self.graph[edge_index].strength as f64).unwrap_or(0.0)
     }
