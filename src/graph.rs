@@ -1,6 +1,7 @@
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::Undirected;
-use std::collections::HashMap;
+use petgraph::visit::EdgeRef;
+use std::collections::{HashMap, HashSet};
 
 use graphops::graph::{Graph as GraphOpsGraph, WeightedGraph};
 
@@ -138,6 +139,57 @@ impl KnowledgeGraph {
         }
 
         groups.into_iter().map(|(id, members)| Community {id, members}).collect()
+    }
+
+    pub fn build_community_content(&self, community: &Community) -> String {
+        let mut content = String::new();
+
+        content.push_str("Entities:\n");
+
+        for node_index in &community.members {
+            let node = &self.graph[*node_index];
+
+            content.push_str(&format!(
+                 "- {} ({}): {}\n",
+                    node.name,
+                    node.entity_type,
+                    node.description
+            ));
+        }
+
+        let member_set: HashSet<NodeIndex> = community.members.iter().copied().collect();
+
+        let mut relationship_lines = Vec::new();
+
+        for edge in self.graph.edge_references() {
+            let source = edge.source();
+            let target = edge.target();
+
+            if member_set.contains(&source) || member_set.contains(&target) {
+                let source_node = &self.graph[source];
+                let target_node = &self.graph[target];
+                let relationship = edge.weight();
+
+                relationship_lines.push(format!(
+                    "- {} -> {}: {}",
+                    source_node.name,
+                    target_node.name,
+                    relationship.description
+                ));
+            }
+        }
+
+        if !relationship_lines.is_empty() {
+            content.push_str("\nRelationships:\n");
+
+            for line in relationship_lines {
+                content.push_str(&line);
+                content.push('\n');
+            }
+        }
+
+        content
+
     }
     
 

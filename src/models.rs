@@ -22,3 +22,14 @@ pub struct Relationship {
     pub description: String,
     pub strength: f32,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComunityReport {
+    pub title: String,
+    pub summary: String,
+    pub key_themes: Vec<String>,
+    pub most_important_entities: Vec<String>,
+    pub community_id: usize,
+    pub members: Vec<String>,
+}
+
