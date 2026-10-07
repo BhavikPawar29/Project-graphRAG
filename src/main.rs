@@ -95,6 +95,7 @@ async fn main() -> Result<()>{
 
         extractions.push(extraction);
     }
+    
 
     println!();
     println!(
@@ -138,20 +139,21 @@ async fn main() -> Result<()>{
         }
     }
 
-    
     let communities = knowledge_graph.detect_communities();
     
+    let community_groups =
+        knowledge_graph.group_by_community(&communities);
+
     println!("\nCommunities:");
 
-    for node_index in knowledge_graph.graph.node_indices() {
-        let node = &knowledge_graph.graph[node_index];
-        let community_id = communities[node_index.index()];
+    for community in &community_groups {
+        println!("\nCommunity {}:", community.id);
 
-         println!(
-            "  Community {} -> {}",
-            community_id,
-            node.name
-        );
+        for node_index in &community.members {
+            let node = &knowledge_graph.graph[*node_index];
+
+            println!("  - {}", node.name);
+        }
     }
     
     Ok(())

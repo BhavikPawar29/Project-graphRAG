@@ -70,11 +70,7 @@ struct OllamaMessage {
     content: String,
 }
 
-pub async fn extract_entities_and_relationships (
-    client: &Client,
-    model: &str,
-    chunk: &str,
-) -> Result<Extraction>{
+pub async fn extract_entities_and_relationships ( client: &Client, model: &str, chunk: &str) -> Result<Extraction>{
   let request = OllamaRequest {
     model: model.to_string(),
     messages: vec![

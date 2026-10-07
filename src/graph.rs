@@ -26,11 +26,12 @@ pub struct KnowledgeGraph {
     pub node_indices: HashMap<String, NodeIndex>,
 }
 
-// #[derive(Debug)]
-// pub struct Community {
-//     pub id: usize, 
-//     pub members: Vec<NodeIndex>,
-// }
+#[derive(Debug)]
+pub struct Community {
+    pub id: usize, 
+    pub members: Vec<NodeIndex>,
+} 
+
 
 impl KnowledgeGraph {
     pub fn new () -> Self {
@@ -126,6 +127,18 @@ impl KnowledgeGraph {
 
         graphops::louvain::louvain_weighted(&weighted_graph, 1.0)
     }
+
+    pub fn group_by_community(&self, labels:  &[usize]) -> Vec<Community> {
+        let mut groups: HashMap<usize, Vec<NodeIndex>> = HashMap::new();
+
+        for node_index in self.graph.node_indices() {
+            let community_id = labels[node_index.index()];
+
+            groups.entry(community_id).or_default().push(node_index);
+        }
+
+        groups.into_iter().map(|(id, members)| Community {id, members}).collect()
+    }
     
 
 }
@@ -151,6 +164,11 @@ impl<'a> WeightedGraph for WeightedPetgraph<'a> {
         let source = petgraph::graph::NodeIndex::new(source);
         let target = petgraph::graph::NodeIndex::new(target);
 
-        self.graph.find_edge(source, target).map(|edge_index| self.graph[edge_index].strength as f64).unwrap_or(0.0)
+        self.graph
+            .find_edge(source, target)
+            .map(|edge_index| {self.
+                graph[edge_index].strength as f64
+            })
+            .unwrap_or(0.0)
     }
 }
